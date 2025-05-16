@@ -21,4 +21,4 @@ This project is a lightweight prototype simulating gesture based mouse control u
 - MediaPipe offers CNN parameter adjustments, so the program can be adjusted to different levels of confidence.
 
 ### Summary:
-> Built a hand-tracking virtual mouse in Python using MediaPipe; implemented real-time gesture detection with left/right click logic and visual interaction feedback.
+> Built a hand-tracking virtual mouse in Python using MediaPipe computer vision. Implemented real-time gesture detection with left/right click logic and visual interaction feedback.
