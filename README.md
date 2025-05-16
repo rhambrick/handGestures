@@ -11,7 +11,7 @@ This project is a lightweight prototype simulating gesture based mouse control u
 - Live feedback with outlined fingertip marker and click line indicator
 - Design aimed for minimal hardware
 
-![demo.mp4](demo.mp4)
+[![demo.mp4](demo.mp4)](https://github.com/rhambrick/handGestures/blob/main/Demo.mp4)
 
 ### Notes:
 - Project was built as a resume piece to explore gesture recognition and user interaction design
