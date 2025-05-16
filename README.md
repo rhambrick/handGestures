@@ -7,7 +7,7 @@ This project is a lightweight prototype simulating gesture based mouse control u
 - Gesture detection:
   - **Left click**: Touch thumb to index finger
   - **Right click**: Touch thumb to middle finger
-  Click and drag supported
+  - Click and drag supported
 - Live feedback with outlined fingertip marker and click line indicator
 - Design aimed for minimal hardware
 
