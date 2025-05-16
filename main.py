@@ -11,6 +11,7 @@ import pygame   # used for window and drawing on screen
 import pygame.camera
 import mediapipe as mp  # used for hand tracking
 import numpy as np  # used for quick maths
+import time # for timing inputs
 
 # Initialize Pygame and camera
 pygame.init()
@@ -25,7 +26,12 @@ cam.start()
 
 # Mediapipe hands setup
 mp_hands = mp.solutions.hands
-hands = mp_hands.Hands(static_image_mode=False, max_num_hands=1, min_detection_confidence=0.7)
+hands = mp_hands.Hands(
+    static_image_mode = False,
+    max_num_hands = 1,
+    min_detection_confidence = 0.90,
+    min_tracking_confidence = 0.8
+)   # tweak these with trial and error based on camera and how it operates
 mp_drawing = mp.solutions.drawing_utils
 
 # Pygame display setup
@@ -35,12 +41,19 @@ pygame.display.set_caption("Hand Tracking Program")
 clock = pygame.time.Clock()
 running = True
 
+# Distance thresholds - these are gonna be trial and error for sure
+# folks online say this is a common way to handle input bouncing
+LEFT_CLICK_TRIGGER = 35
+LEFT_CLICK_RELEASE = 50
+RIGHT_CLICK_TRIGGER = 35
+RIGHT_CLICK_RELEASE = 50
+
 # Track click states
 left_down = False
 right_down = False
 
 while running:
-    clock.tick(30)  # Limit to 30 FPS
+    clock.tick(60)  # Limit to 60 FPS
 
     # Cleanly exit when user closes window
     for event in pygame.event.get():
@@ -86,16 +99,8 @@ while running:
         dist_index_thumb = np.hypot(ix - tx, iy - ty)
         dist_middle_thumb = np.hypot(mx - tx, my - ty)
 
-        # Distance thresholds - these are gonna be trial and error for sure
-        # folks online say this is a common way to handle input bouncing
-
-        LEFT_CLICK_TRIGGER = 35
-        LEFT_CLICK_RELEASE = 50
-        RIGHT_CLICK_TRIGGER = 35
-        RIGHT_CLICK_RELEASE = 50
-
         # Handle left click (index + thumb ONLY)
-        if dist_index_thumb < LEFT_CLICK_TRIGGER and dist_middle_thumb > RIGHT_CLICK_RELEASE:
+        if dist_index_thumb < LEFT_CLICK_TRIGGER and dist_middle_thumb > RIGHT_CLICK_RELEASE:   # Ensures middle finger is out of the way
             if not left_down:
                 left_down = True
                 print("LEFT MOUSE DOWN")
@@ -105,7 +110,7 @@ while running:
                 print("LEFT MOUSE UP")
 
         # Handle right click (middle + thumb ONLY)
-        if dist_middle_thumb < RIGHT_CLICK_TRIGGER and dist_index_thumb > LEFT_CLICK_RELEASE:
+        if dist_middle_thumb < RIGHT_CLICK_TRIGGER and dist_index_thumb > LEFT_CLICK_RELEASE:   # ensures index finger is out of the way
             if not right_down:
                 right_down = True
                 print("RIGHT MOUSE DOWN")
@@ -114,7 +119,16 @@ while running:
                 right_down = False
                 print("RIGHT MOUSE UP")
 
-
+    # Draw line when clicking for good visualization
+    if left_down:
+        wrist = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST]
+        wx, wy = int(wrist.x * 640), int(wrist.y * 480)
+        pygame.draw.line(screen, (255, 255, 0), (wx, wy), (ix, iy), 4)
+    if right_down:
+        wrist = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST]
+        wx, wy = int(wrist.x * 640), int(wrist.y * 480)
+        pygame.draw.line(screen, (0, 255, 255), (wx, wy), (mx, my), 4)
+    
     pygame.display.update()
 
 # Clean things up
