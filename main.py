@@ -48,9 +48,14 @@ LEFT_CLICK_RELEASE = 50
 RIGHT_CLICK_TRIGGER = 35
 RIGHT_CLICK_RELEASE = 50
 
+# For input smoothing
+alpha = 0.3
+prev_smoothed_landmarks = None
+
 # Track click states
 left_down = False
 right_down = False
+
 
 while running:
     clock.tick(60)  # Limit to 60 FPS
@@ -74,17 +79,26 @@ while running:
     screen.blit(frame, (0, 0))  # Show camera image in window
 
     if results.multi_hand_landmarks:
-        hand_landmarks = results.multi_hand_landmarks[0]
+        raw_landmarks = results.multi_hand_landmarks[0].landmark
+        raw_array = np.array([[lm.x, lm.y, lm.z] for lm in raw_landmarks])
+
+        # Smoothing
+        if prev_smoothed_landmarks is None:
+            prev_smoothed_landmarks = raw_array
+        else:
+            prev_smoothed_landmarks = (
+                alpha * raw_array + (1 - alpha) * prev_smoothed_landmarks
+            )
 
         # Get finger coordinates
-        index_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-        middle_tip = hand_landmarks.landmark[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
-        thumb_tip = hand_landmarks.landmark[mp_hands.HandLandmark.THUMB_TIP]
-
-        # Convert to screen coordinates
-        ix, iy = int(index_tip.x * 640), int(index_tip.y * 480)
-        mx, my = int(middle_tip.x * 640), int(middle_tip.y * 480)
-        tx, ty = int(thumb_tip.x * 640), int(thumb_tip.y * 480)
+        index_tip = prev_smoothed_landmarks[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+        middle_tip = prev_smoothed_landmarks[mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
+        thumb_tip = prev_smoothed_landmarks[mp_hands.HandLandmark.THUMB_TIP]
+        
+        # Convert to screen coords.
+        ix, iy = int(index_tip[0] * 640), int(index_tip[1] * 480)
+        mx, my = int(middle_tip[0] * 640), int(middle_tip[1] * 480)
+        tx, ty = int(thumb_tip[0] * 640), int(thumb_tip[1] * 480)
 
         # Draw hollow green circle on index finger
         pygame.draw.circle(screen, (0, 255, 0), (ix, iy), 12, width=3)
@@ -118,16 +132,24 @@ while running:
             if right_down:
                 right_down = False
                 print("RIGHT MOUSE UP")
+    
+    # Draw lines from wrist when clicking for visual feedback
+    if prev_smoothed_landmarks is not None:
+        wrist = prev_smoothed_landmarks[mp_hands.HandLandmark.WRIST]
+        wx, wy = int(wrist[0] * 640), int(wrist[1] * 480)
 
-    # Draw line when clicking for good visualization
-    if left_down:
-        wrist = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST]
-        wx, wy = int(wrist.x * 640), int(wrist.y * 480)
-        pygame.draw.line(screen, (255, 255, 0), (wx, wy), (ix, iy), 4)
-    if right_down:
-        wrist = hand_landmarks.landmark[mp_hands.HandLandmark.WRIST]
-        wx, wy = int(wrist.x * 640), int(wrist.y * 480)
-        pygame.draw.line(screen, (0, 255, 255), (wx, wy), (mx, my), 4)
+        if left_down:
+            pygame.draw.line(screen, (255, 255, 0), (ix, iy), (wx, wy), width=3)
+            pygame.draw.line(screen, (255, 255, 0), (tx, ty), (wx, wy), width=3)
+
+        if right_down:
+            pygame.draw.line(screen, (0, 255, 255), (mx, my), (wx, wy), width=3)
+            pygame.draw.line(screen, (0, 255, 255), (tx, ty), (wx, wy), width=3)
+
+    else:
+        prev_smoothed_landmarks = None
+        left_mouse_down = False
+        right_mouse_down = False
     
     pygame.display.update()
 
@@ -136,4 +158,4 @@ hands.close()
 cam.stop()
 pygame.quit()
 
-# Thanks to mediapipe docs, stack overflow, reddit, etc because without that this would've taken days :)
+# Thanks to mediapipe docs, stack overflow, reddit, etc because without that this would've taken weeks :)
